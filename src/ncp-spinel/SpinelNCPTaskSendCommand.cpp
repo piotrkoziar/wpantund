@@ -403,6 +403,8 @@ on_error:
 		check_noerr(mNextCommandRet);
 	}
 
+	syslog(LOG_ERR, "SendCommand task finish: mRetVal: %u mReturnValue");
+
 	finish(mRetVal, mReturnValue);
 
 	EH_END();

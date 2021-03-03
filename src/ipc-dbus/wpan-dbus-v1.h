@@ -99,6 +99,11 @@
 
 #define WPANTUND_IF_SIGNAL_NETWORK_TIME_UPDATE "NetworkTimeUpdate"
 
+#define WPANTUND_IF_CMD_LINK_METRICS_QUERY        "LinkMetricsQuery"
+#define WPANTUND_IF_CMD_LINK_METRICS_PROBE        "LinkMetricsProbe"
+#define WPANTUND_IF_CMD_LINK_METRICS_MGMT_FORWARD "LinkMetricsMgmtForward"
+#define WPANTUND_IF_CMD_LINK_METRICS_MGMT_ENH_ACK "LinkMetricsMgmtEnhAck"
+
 // ============================================================================
 // NestLabs Internal API Interface
 
