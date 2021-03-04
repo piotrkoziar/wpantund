@@ -513,6 +513,14 @@ SpinelNCPInstance::get_supported_property_keys()const
 
 	if (mCapabilities.count(SPINEL_CAP_NET_THREAD_1_2)) {
 		properties.insert(kWPANTUNDProperty_ThreadDomainName);
+		properties.insert(kWPANTUNDProperty_ThreadBackboneRouterPrimary);
+	}
+
+	if (mCapabilities.count(SPINEL_CAP_THREAD_BACKBONE_ROUTER)) {
+		properties.insert(kWPANTUNDProperty_ThreadBackboneRouterLocalState);
+		properties.insert(kWPANTUNDProperty_ThreadBackboneRouterLocalConfig);
+		properties.insert(kWPANTUNDProperty_ThreadBackboneRouterLocalRegister);
+		properties.insert(kWPANTUNDProperty_ThreadBackboneRouterLocalJitter);
 	}
 
 	if (mCapabilities.count(SPINEL_CAP_ERROR_RATE_TRACKING)) {
@@ -2133,6 +2141,115 @@ unpack_thread_network_time_as_any(const uint8_t *data_in, spinel_size_t data_len
 	return ret;
 }
 
+static int
+unpack_backbone_router_primary(const uint8_t *data_in, spinel_size_t data_len, boost::any& value)
+{
+	spinel_ssize_t len;
+	char c_string[300];
+	int ret = kWPANTUNDStatus_Ok;
+	uint16_t server = 0;
+	uint16_t delay = 0;
+	uint32_t timeout = 0;
+	uint8_t seqno = 0;
+
+	len = spinel_datatype_unpack(
+		data_in,
+		data_len,
+		(
+			SPINEL_DATATYPE_UINT16_S
+			SPINEL_DATATYPE_UINT16_S
+			SPINEL_DATATYPE_UINT32_S
+			SPINEL_DATATYPE_UINT8_S
+		),
+		&server,
+		&delay,
+		&timeout,
+		&seqno
+	);
+
+	if (len > 0) {
+		snprintf(c_string, sizeof(c_string), "server16 = 0x%04X, seqno = %hu, delay = %hu secs, timeout = %u secs",
+			server, (uint16_t)seqno, delay, timeout);
+
+		value = std::string(c_string);
+	} else {
+		ret = kWPANTUNDStatus_Failure;
+	}
+
+	return ret;
+}
+
+static int
+unpack_backbone_router_config(const uint8_t *data_in, spinel_size_t data_len, boost::any& value)
+{
+	spinel_ssize_t len;
+	char c_string[300];
+	int ret = kWPANTUNDStatus_Ok;
+	uint16_t delay = 0;
+	uint32_t timeout = 0;
+	uint8_t seqno = 0;
+
+	len = spinel_datatype_unpack(
+		data_in,
+		data_len,
+		(
+			SPINEL_DATATYPE_UINT16_S
+			SPINEL_DATATYPE_UINT32_S
+			SPINEL_DATATYPE_UINT8_S
+		),
+		&delay,
+		&timeout,
+		&seqno
+	);
+
+	if (len > 0) {
+		snprintf(c_string, sizeof(c_string), "seqno = %hu, delay = %hu secs, timeout = %u secs",
+			(uint16_t)seqno, delay, timeout);
+
+		value = std::string(c_string);
+	} else {
+		ret = kWPANTUNDStatus_Failure;
+	}
+
+	return ret;
+}
+
+static int
+unpack_backbone_router_state(const uint8_t *data_in, spinel_size_t data_len, boost::any& value)
+{
+	spinel_ssize_t len;
+	uint8_t state;
+	int ret = kWPANTUNDStatus_Ok;
+
+	len = spinel_datatype_unpack(
+		data_in,
+		data_len,
+		SPINEL_DATATYPE_UINT8_S,
+		&state
+	);
+
+	if (len > 0) {
+		switch (state) {
+		case SPINEL_THREAD_BACKBONE_ROUTER_STATE_DISABLED:
+			value = std::string(kWPANTUNDThreadBackboneRouterState_Disabled);
+			break;
+		case SPINEL_THREAD_BACKBONE_ROUTER_STATE_SECONDARY:
+			value = std::string(kWPANTUNDThreadBackboneRouterState_Secondary);
+			break;
+		case SPINEL_THREAD_BACKBONE_ROUTER_STATE_PRIMARY:
+			value = std::string(kWPANTUNDThreadBackboneRouterState_Primary);
+			break;
+		default:
+			ret = kWPANTUNDStatus_Failure;
+			break;
+		}
+	} else {
+		ret = kWPANTUNDStatus_Failure;
+	}
+
+	return ret;
+}
+
 void
 SpinelNCPInstance::get_dataset_command_help(std::list<std::string> &list)
 {
@@ -2784,7 +2901,10 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 		kWPANTUNDProperty_ThreadCslChannel,
 		SPINEL_CAP_THREAD_CSL_RECEIVER,
 		SPINEL_PROP_THREAD_CSL_CHANNEL, SPINEL_DATATYPE_UINT8_S);
-
+	register_get_handler_capability_spinel_simple(
+		kWPANTUNDProperty_ThreadBackboneRouterLocalJitter,
+		SPINEL_CAP_THREAD_BACKBONE_ROUTER,
+		SPINEL_PROP_THREAD_BACKBONE_ROUTER_LOCAL_REGISTRATION_JITTER, SPINEL_DATATYPE_UINT8_S);
 
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Properties associated with a spinel property using an unpacker
@@ -2944,6 +3064,18 @@ SpinelNCPInstance::regsiter_all_get_handlers(void)
 		kWPANTUNDProperty_OpenThreadNeighborTableMultiRadioInfo,
 		SPINEL_CAP_MULTI_RADIO,
 		SPINEL_PROP_NEIGHBOR_TABLE_MULTI_RADIO_INFO, boost::bind(unpack_neighbor_table_multi_radio_info, _1, _2, _3));
+	register_get_handler_capability_spinel_unpacker(
+		kWPANTUNDProperty_ThreadBackboneRouterPrimary,
+		SPINEL_CAP_NET_THREAD_1_2,
+		SPINEL_PROP_THREAD_BACKBONE_ROUTER_PRIMARY, boost::bind(unpack_backbone_router_primary, _1, _2, _3));
+	register_get_handler_capability_spinel_unpacker(
+		kWPANTUNDProperty_ThreadBackboneRouterLocalState,
+		SPINEL_CAP_THREAD_BACKBONE_ROUTER,
+		SPINEL_PROP_THREAD_BACKBONE_ROUTER_LOCAL_STATE, boost::bind(unpack_backbone_router_state, _1, _2, _3));
+	register_get_handler_capability_spinel_unpacker(
+		kWPANTUNDProperty_ThreadBackboneRouterLocalConfig,
+		SPINEL_CAP_THREAD_BACKBONE_ROUTER,
+		SPINEL_PROP_THREAD_BACKBONE_ROUTER_LOCAL_CONFIG, boost::bind(unpack_backbone_router_config, _1, _2, _3));
 
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Properties with a dedicated handler method
@@ -3797,6 +3929,10 @@ SpinelNCPInstance::regsiter_all_set_handlers(void)
 		kWPANTUNDProperty_ThreadCslChannel,
 		SPINEL_CAP_THREAD_CSL_RECEIVER,
 		SPINEL_PROP_THREAD_CSL_CHANNEL, SPINEL_DATATYPE_UINT8_C);
+	register_set_handler_capability_spinel(
+		kWPANTUNDProperty_ThreadBackboneRouterLocalJitter,
+		SPINEL_CAP_THREAD_BACKBONE_ROUTER,
+		SPINEL_PROP_THREAD_BACKBONE_ROUTER_LOCAL_REGISTRATION_JITTER, SPINEL_DATATYPE_UINT8_C);
 
 	// Properties with a `ValueConverter`
 	register_set_handler_capability_spinel(
@@ -3824,6 +3960,16 @@ SpinelNCPInstance::regsiter_all_set_handlers(void)
 		SPINEL_CAP_COUNTERS,
 		SPINEL_PROP_CNTR_ALL_IP_COUNTERS, SPINEL_DATATYPE_UINT8_C,
 		&SpinelNCPInstance::convert_value_counter_reset);
+	register_set_handler_capability_spinel(
+		kWPANTUNDProperty_ThreadBackboneRouterLocalState,
+		SPINEL_CAP_THREAD_BACKBONE_ROUTER,
+		SPINEL_PROP_THREAD_BACKBONE_ROUTER_LOCAL_STATE, SPINEL_DATATYPE_UINT8_C,
+		&SpinelNCPInstance::convert_value_BackboneRouterState);
+	register_set_handler_capability_spinel(
+		kWPANTUNDProperty_ThreadBackboneRouterLocalRegister,
+		SPINEL_CAP_THREAD_BACKBONE_ROUTER,
+		SPINEL_PROP_THREAD_BACKBONE_ROUTER_LOCAL_REGISTER, SPINEL_DATATYPE_UINT8_C,
+		&SpinelNCPInstance::convert_value_BackboneRouterRegister);
 
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Properties requiring capability check and persistence (saving in settings),
@@ -4072,6 +4218,41 @@ SpinelNCPInstance::convert_value_CommissionerState(const boost::any &value, boos
 	}
 
 	return ret;
+}
+
+int
+SpinelNCPInstance::convert_value_BackboneRouterState(const boost::any &value, boost::any &value_out)
+{
+	int ret = kWPANTUNDStatus_Ok;
+	std::string state_str = any_to_string(value);
+	const char *str = state_str.c_str();
+
+	if (strcaseequal(str, kWPANTUNDThreadBackboneRouterState_Disabled) || strcaseequal(str, "stop") || strcaseequal(str, "off")
+		|| strcaseequal(str, "0") || strcaseequal(str, "false") || strcaseequal(str, "disable")
+	) {
+		value_out = static_cast<uint8_t>(SPINEL_THREAD_BACKBONE_ROUTER_STATE_DISABLED);
+
+	} else if (strcaseequal(str, kWPANTUNDThreadBackboneRouterState_Primary) || strcaseequal(str, "start") ||
+		strcaseequal(str, "on") || strcaseequal(str, "1") || strcaseequal(str, "true") || strcaseequal(str, "enable")
+	) {
+		value_out = static_cast<uint8_t>(SPINEL_THREAD_BACKBONE_ROUTER_STATE_PRIMARY);
+
+	} else {
+		ret = kWPANTUNDStatus_InvalidArgument;
+	}
+
+	return ret;
+}
+
+int
+SpinelNCPInstance::convert_value_BackboneRouterRegister(const boost::any &value, boost::any &value_out)
+{
+	// The value written to related spinel property does not matter,
+	// so we just write value `1`.
+
+	(void)value;
+	value_out = 1;
+	return kWPANTUNDStatus_Ok;
 }
 
 void

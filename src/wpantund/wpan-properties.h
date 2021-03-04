@@ -139,6 +139,15 @@
 #define kWPANTUNDProperty_ThreadParent                          "Thread:Parent"
 #define kWPANTUNDProperty_ThreadParentAsValMap                  "Thread:Parent:AsValMap"
 #define kWPANTUNDProperty_ThreadDomainName                      "Thread:DomainName"
+#define kWPANTUNDProperty_ThreadBackboneRouterPrimary           "Thread:BackboneRouter:Primary"
+#define kWPANTUNDProperty_ThreadBackboneRouterLocalState        "Thread:BackboneRouter:State"
+#define kWPANTUNDProperty_ThreadBackboneRouterLocalConfig       "Thread:BackboneRouter:Config"
+#define kWPANTUNDProperty_ThreadBackboneRouterLocalRegister     "Thread:BackboneRouter:Register"
+#define kWPANTUNDProperty_ThreadBackboneRouterLocalJitter       "Thread:BackboneRouter:Jitter"
+
+#define kWPANTUNDThreadBackboneRouterState_Disabled             "disabled"
+#define kWPANTUNDThreadBackboneRouterState_Secondary            "secondary"
+#define kWPANTUNDThreadBackboneRouterState_Primary              "primary"
 
 #define kWPANTUNDProperty_DatasetActiveTimestamp                "Dataset:ActiveTimestamp"
 #define kWPANTUNDProperty_DatasetPendingTimestamp               "Dataset:PendingTimestamp"
